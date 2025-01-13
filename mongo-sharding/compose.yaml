@@ -1,0 +1,279 @@
+version: "3.9"
+
+services:
+  # Config Servers
+  configSrv1:
+    image: mongo:latest
+    container_name: configSrv1
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all --port 27017
+    volumes:
+      - configSrv1_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  configSrv2:
+    image: mongo:latest
+    container_name: configSrv2
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all --port 27017
+    volumes:
+      - configSrv2_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  configSrv3:
+    image: mongo:latest
+    container_name: configSrv3
+    command: mongod --configsvr --replSet configReplSet --bind_ip_all --port 27017
+    volumes:
+      - configSrv3_data:/data/db
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Replication Set Initializer
+  init_replset:
+    image: mongo:latest
+    container_name: init_replset
+    depends_on:
+      configSrv1:
+        condition: service_healthy
+      configSrv2:
+        condition: service_healthy
+      configSrv3:
+        condition: service_healthy
+    entrypoint: >
+      mongosh --host configSrv1:27017 --eval "
+      rs.initiate({
+        _id: 'configReplSet',
+        configsvr: true,
+        members: [
+          { _id: 0, host: 'configSrv1:27017' },
+          { _id: 1, host: 'configSrv2:27017' },
+          { _id: 2, host: 'configSrv3:27017' }
+        ]
+      })"
+    networks:
+      default:
+
+  # Shard 1
+  mongodb1:
+    image: mongo:latest
+    container_name: mongodb1
+    command: mongod --shardsvr --replSet shard1ReplSet  --bind_ip_all --port 27018
+    volumes:
+      - mongodb1_data:/data/db
+    depends_on:
+      configSrv1:
+        condition: service_healthy
+      configSrv2:
+        condition: service_healthy
+      configSrv3:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      start_period: 15s
+      timeout: 5s
+      retries: 3
+
+#  mongodb2:
+#    image: mongo:latest
+#    container_name: mongodb2
+#    command: mongod --shardsvr --replSet shard1ReplSet  --bind_ip_all --port 27019
+#    volumes:
+#      - mongodb2_data:/data/db
+#    depends_on:
+#      configSrv1:
+#        condition: service_healthy
+#      configSrv2:
+#        condition: service_healthy
+#      configSrv3:
+#        condition: service_healthy
+#    healthcheck:
+#      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+#      interval: 10s
+#      start_period: 15s
+#      timeout: 5s
+#      retries: 3
+#
+#  mongodb3:
+#    image: mongo:latest
+#    container_name: mongodb3
+#    command: mongod --shardsvr --replSet shard1ReplSet  --bind_ip_all --port 27020
+#    volumes:
+#      - mongodb3_data:/data/db
+#    depends_on:
+#      configSrv1:
+#        condition: service_healthy
+#      configSrv2:
+#        condition: service_healthy
+#      configSrv3:
+#        condition: service_healthy
+#    healthcheck:
+#      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+#      interval: 10s
+#      start_period: 15s
+#      timeout: 5s
+#      retries: 3
+#
+#  init_shard1_replset:
+#    image: mongo:latest
+#    container_name: init_shard1_replset
+#    depends_on:
+#      mongodb1:
+#        condition: service_healthy
+#      mongodb2:
+#        condition: service_healthy
+#      mongodb3:
+#        condition: service_healthy
+#    entrypoint: >
+#      mongosh --host mongodb1:27018 --eval "
+#      rs.initiate({
+#        _id: 'shard1ReplSet',
+#        members: [
+#          { _id: 0, host: 'mongodb1:27018' },
+#          { _id: 1, host: 'mongodb2:27019' },
+#          { _id: 2, host: 'mongodb3:27020' }
+#        ]
+#      })"
+#
+#  # Shard 2
+#  mongodb4:
+#    image: mongo:latest
+#    container_name: mongodb4
+#    command: mongod --shardsvr --replSet shard2ReplSet  --bind_ip_all --port 27021
+#    volumes:
+#      - mongodb4_data:/data/db
+#    depends_on:
+#      configSrv1:
+#        condition: service_healthy
+#      configSrv2:
+#        condition: service_healthy
+#      configSrv3:
+#        condition: service_healthy
+#    healthcheck:
+#      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+#      interval: 10s
+#      start_period: 15s
+#      timeout: 5s
+#      retries: 3
+#
+#  mongodb5:
+#    image: mongo:latest
+#    container_name: mongodb5
+#    command: mongod --shardsvr --replSet shard2ReplSet --bind_ip_all --port 27022
+#    volumes:
+#      - mongodb5_data:/data/db
+#    depends_on:
+#      configSrv1:
+#        condition: service_healthy
+#      configSrv2:
+#        condition: service_healthy
+#      configSrv3:
+#        condition: service_healthy
+#
+#    healthcheck:
+#      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+#      interval: 10s
+#      start_period: 15s
+#      timeout: 5s
+#      retries: 3
+#
+#  mongodb6:
+#    image: mongo:latest
+#    container_name: mongodb6
+#    command: mongod --shardsvr --replSet shard2ReplSet  --bind_ip_all --port 27023
+#    volumes:
+#      - mongodb6_data:/data/db
+#    depends_on:
+#      configSrv1:
+#        condition: service_healthy
+#      configSrv2:
+#        condition: service_healthy
+#      configSrv3:
+#        condition: service_healthy
+#    healthcheck:
+#      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+#      interval: 10s
+#      start_period: 15s
+#      timeout: 5s
+#      retries: 3
+#
+#  init_shard2_replset:
+#    image: mongo:latest
+#    container_name: init_shard2_replset
+#    depends_on:
+#      mongodb4:
+#        condition: service_healthy
+#      mongodb5:
+#        condition: service_healthy
+#      mongodb6:
+#        condition: service_healthy
+#    entrypoint: >
+#      mongosh --host mongodb4:27021 --eval "
+#      rs.initiate({
+#        _id: 'shard2ReplSet',
+#        members: [
+#          { _id: 0, host: 'mongodb4:27021' },
+#          { _id: 1, host: 'mongodb5:27022' },
+#          { _id: 2, host: 'mongodb6:27023' }
+#        ]
+#      })"
+#
+#  # Mongos Routers
+#  mongos_router_1:
+#    image: mongo:latest
+#    container_name: mongos_router_1
+#    command: mongos --configdb configReplSet/configSrv1:27017,configSrv2:27017,configSrv3:27017 --bind_ip_all --port 27024
+#    depends_on:
+#      - configSrv1
+#      - configSrv2
+#      - configSrv3
+#    ports:
+#      - 27024:27017
+#
+#  mongos_router_2:
+#    image: mongo:latest
+#    container_name: mongos_router_2
+#    command: mongos --configdb configReplSet/configSrv1:27017,configSrv2:27017,configSrv3:27017 --bind_ip_all --port 27025
+#    depends_on:
+#      - configSrv1
+#      - configSrv2
+#      - configSrv3
+#    ports:
+#      - 27015:27017
+
+  # API Service
+#  pymongo_api:
+#    container_name: pymongo_api
+#    build:
+#      context: api_app
+#      dockerfile: Dockerfile
+#    image: kazhem/pymongo_api:1.0.0
+#    depends_on:
+#      - mongos_router_1
+#      - mongos_router_2
+#    ports:
+#      - 8080:8080
+#    environment:
+#      MONGODB_URL: "mongodb://mongos_router_1:27024,mongos_router_2:27025"
+#      MONGODB_DATABASE_NAME: "somedb"
+
+volumes:
+  configSrv1_data:
+  configSrv2_data:
+  configSrv3_data:
+  mongodb1_data:
+  mongodb2_data:
+  mongodb3_data:
+  mongodb4_data:
+  mongodb5_data:
+  mongodb6_data:
