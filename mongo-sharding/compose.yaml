@@ -26,6 +26,18 @@ services:
       timeout: 5s
       retries: 5
 
+  config_srv_3:
+    image: mongo:latest
+    container_name: config_srv_3
+    command: mongod --configsvr --replSet cfgRS --port 27021 --bind_ip_all
+    volumes:
+      - config_srv_3:/data/configdb
+    healthcheck:
+      test: [ "CMD", "mongosh", "--host", "localhost:27021", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # сервис для инициализации репликационного сета конфигурационных серверов
   init_config_replset:
     image: mongo:latest
@@ -35,13 +47,16 @@ services:
         condition: service_healthy
       config_srv_2:
         condition: service_healthy
+      config_srv_3:
+        condition: service_healthy
     entrypoint: >
       mongosh --host config_srv_1:27019 --eval '
       rs.initiate({
         _id: "cfgRS",
         members: [
           { _id: 0, host: "config_srv_1:27019" },
-          { _id: 1, host: "config_srv_2:27020" }
+          { _id: 1, host: "config_srv_2:27020" },
+          { _id: 2, host: "config_srv_3:27021" }
         ]
       })'
 
@@ -147,13 +162,35 @@ services:
     depends_on:
       mongos_router_1:
         condition: service_healthy
+      mongos_router_2:
+        condition: service_healthy
     entrypoint: >
-      mongosh --host mongos_router_1:27017 --eval '
-      sh.addShard("shard01/mongo_shard_1_1:27022");
-      sh.addShard("shard02/mongo_shard_2_1:27025")'
+      bash -c '
+        mongosh --host mongos_router_1:27017 --eval "
+        sh.addShard(\"shard01/mongo_shard_1_1:27022\");
+        sh.addShard(\"shard02/mongo_shard_2_1:27025\")" &&
+        mongosh --host mongos_router_2:27018 --eval "
+        sh.addShard(\"shard01/mongo_shard_1_1:27022\");
+        sh.addShard(\"shard02/mongo_shard_2_1:27025\")"
+      '
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: api_app/Dockerfile
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      add_shards:
+        condition: service_started
+    ports:
+      - 8080:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos_router_1:27017,mongos_router_2:27018"
+      MONGODB_DATABASE_NAME: "some_db"
 
 volumes:
   config_srv_1:
   config_srv_2:
+  config_srv_3:
   mongo_shard_1_1:
   mongo_shard_2_1:

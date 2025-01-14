@@ -45,7 +45,7 @@ else:
     cache = nocache
 
 
-client = motor.motor_asyncio.AsyncIOMotorClient(DATABASE_URL)
+client = motor.motor_asyncio.AsyncIOMotorClient(DATABASE_URL, directConnection=False)
 db = client[DATABASE_NAME]
 
 # Represents an ObjectId field in the database.
@@ -117,7 +117,6 @@ async def root():
         "mongo_nodes": client.nodes,
         "mongo_primary_host": client.primary,
         "mongo_secondary_hosts": client.secondaries,
-        "mongo_address": client.address,
         "mongo_is_primary": client.is_primary,
         "mongo_is_mongos": client.is_mongos,
         "collections": collections,
