@@ -5,6 +5,6 @@ COPY requirements.txt ./
 # Устанавливаем зависимости python не пересобирая их
 RUN pip install --no-cache --no-cache-dir -r requirements.txt
 # Копирование кода приложения
-COPY app.py /app/
+COPY app_shard.py /app/
 ENTRYPOINT ["uvicorn"]
-CMD ["app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["app_shard:app", "--host", "0.0.0.0", "--port", "8080"]
