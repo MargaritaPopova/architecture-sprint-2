@@ -1,5 +1,7 @@
 version: '3.8'
 
+name: mongo-sharding
+
 services:
   # конфигурационные серверы
   config_srv_1:
