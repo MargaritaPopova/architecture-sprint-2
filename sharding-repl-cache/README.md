@@ -1,5 +1,9 @@
 # pymongo-api
 
+--------
+**Схема**: https://drive.google.com/file/d/1Y1gy_0oU6AiNpNVEYW0Ssq7iZbdWiddT/view?usp=sharing
+---------
+
 ## Как запустить
 
 Переходим в папку sharding-repl-cache 
