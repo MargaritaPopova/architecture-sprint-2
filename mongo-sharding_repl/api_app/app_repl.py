@@ -45,7 +45,7 @@ else:
     cache = nocache
 
 
-client = motor.motor_asyncio.AsyncIOMotorClient(DATABASE_URL)
+client = motor.motor_asyncio.AsyncIOMotorClient(DATABASE_URL, directConnection=False)
 db = client[DATABASE_NAME]
 
 # Represents an ObjectId field in the database.
@@ -78,6 +78,19 @@ class UserCollection(BaseModel):
     users: List[UserModel]
 
 
+async def get_replica_status():
+    direct_client = motor.motor_asyncio.AsyncIOMotorClient(
+        "mongodb://mongo_shard_1_1:27022,mongo_shard_2_1:27025"
+    )
+    try:
+        status = await direct_client.admin.command("replSetGetStatus")
+        return json.dumps(status, indent=2, default=str)
+    except errors.OperationFailure:
+        return "No Replicas"
+    finally:
+        direct_client.close()
+
+
 @app.get("/")
 async def root():
     collection_names = await db.list_collection_names()
@@ -87,11 +100,6 @@ async def root():
         collections[collection_name] = {
             "documents_count": await collection.count_documents({})
         }
-    try:
-        replica_status = await client.admin.command("replSetGetStatus")
-        replica_status = json.dumps(replica_status, indent=2, default=str)
-    except errors.OperationFailure:
-        replica_status = "No Replicas"
 
     topology_description = client.topology_description
     read_preference = client.client_options.read_preference
@@ -117,10 +125,10 @@ async def root():
         "mongo_nodes": client.nodes,
         "mongo_primary_host": client.primary,
         "mongo_secondary_hosts": client.secondaries,
-        "mongo_address": client.address,
         "mongo_is_primary": client.is_primary,
         "mongo_is_mongos": client.is_mongos,
         "collections": collections,
+        "replica_status": await get_replica_status(),
         "shards": shards,
         "cache_enabled": cache_enabled,
         "status": "OK",
