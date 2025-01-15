@@ -8,7 +8,13 @@ https://app.diagrams.net/#G1Y1gy_0oU6AiNpNVEYW0Ssq7iZbdWiddT#%7B%22pageId%22%3A%
 
 ## Как запустить
 
-Переходим в папку sharding-repl-cache 
+Имя ветки: 
+
+```shell
+git checkout origin/sprint_tasks
+```
+
+Переходим в папку sharding-repl-cache   
 Запускаем кластер mongodb и приложение командой
 
 ```shell
