@@ -1,7 +1,9 @@
 # pymongo-api
 
 --------
-**Схема**: https://drive.google.com/file/d/1Y1gy_0oU6AiNpNVEYW0Ssq7iZbdWiddT/view?usp=sharing
+**Схема**: https://drive.google.com/file/d/1Y1gy_0oU6AiNpNVEYW0Ssq7iZbdWiddT/view?usp=sharing  
+или
+https://app.diagrams.net/#G1Y1gy_0oU6AiNpNVEYW0Ssq7iZbdWiddT#%7B%22pageId%22%3A%22-H_mtQnk-PTXWXPvYvuk%22%7D
 ---------
 
 ## Как запустить
