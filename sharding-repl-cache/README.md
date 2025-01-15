@@ -2,6 +2,7 @@
 
 ## Как запустить
 
+Переходим в папку sharding-repl-cache 
 Запускаем кластер mongodb и приложение командой
 
 ```shell
@@ -15,7 +16,7 @@ docker compose up -d
 ./scripts/mongo-init.sh
 ```
 Если скрипт падает с ошибкой
-`Unable to notify any shard on new database additions`, можно попробовать удалить все предыдущие контейнеры и волюмы 
+`Unable to notify any shard on new database additions` либо при запуске сервера падает 500, нужно удалить все предыдущие контейнеры и волюмы 
 ```shell
 docker stop $(docker ps -q)
 docker rm $(docker ps -aq)
@@ -23,6 +24,7 @@ docker rmi $(docker images -q)
 docker volume rm $(docker volume ls -q)
 ```
 пересобрать docker compose еще раз и заново запустить скрипт.
+
 ## Как проверить
 
 ### Если вы запускаете проект на локальной машине
